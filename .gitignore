@@ -1,0 +1,20 @@
+# COMSOL model files (large binaries)
+*.mph
+*.mph.lock
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Windows
+Thumbs.db
+desktop.ini
