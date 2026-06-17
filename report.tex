@@ -157,58 +157,30 @@ base disturbance only).
 \subsection{Study Setup: Two Studies for the 2x2 Matrix}
 
 \begin{itemize}
-  \item \textbf{Study~1} -- actuator excitation: $V_a = 1$~V, base at rest.
+  \item \textbf{Study~1}: actuator excitation, $V_a = 1$~V, base at rest.
         Exports $H_{22}$ (and $H_{12}$ at a second evaluation point).
-  \item \textbf{Study~2} -- base excitation: $\ddot{z}_\text{base} = 1$~m/s$^2$,
+  \item \textbf{Study~2}: base excitation, $\ddot{z}_\text{base} = 1$~m/s$^2$,
         $V_a = 0$.  Exports $H_{21}$ and $H_{11}$.
 \end{itemize}
 
 \subsection{Why Domain Spring Foundation Is Required}
 \label{sec:bc}
 
-A frequency-domain study requires all rigid-body modes to be at finite frequency
-(otherwise the stiffness matrix is singular at $\omega = 0$).  Two approaches
-exist; only one is consistent with base excitation.
+A frequency-domain study requires all rigid-body modes to be at finite frequency,
+otherwise the stiffness matrix is singular at $\omega = 0$.
 
-\subsubsection{Fixed Constraint on Bottom Edges (Phase~I / PPF Model)}
+\textbf{Phase~I (PPF model):} four bottom perimeter edge lines carry a Fixed
+Constraint (geometric entity level set to \emph{Edge}).  This is physically
+correct for the clamped-perimeter assumption and gives $f_1 \approx 214$~Hz.
+Base excitation (Study~2) is not run on this model.
 
-Used in the PPF model: four bottom perimeter edge lines are given a Fixed
-Constraint (geometric entity level set to \emph{Edge}, not Boundary).  This
-anchors all rigid-body modes.
-
-\textbf{Limitation for base excitation:} when a Fixed Constraint is combined with
-a Base Excitation node, the prescribed motion drives those fixed nodes -- which is
-physically correct for a clamped boundary.  However, for the physical foam-mounted
-plate this over-constrains the mounting, raising $f_1$ to approximately 6500~Hz.
-The PPF model therefore uses this BC only for Study~1.  Study~2 is not run on the
-PPF model (base excitation transmissibility is not the primary deliverable).
-
-\subsubsection{Domain Spring Foundation + Base Excitation (Phase~II / IMU Model)}
-
-The IMU model uses a Domain Spring Foundation on the full plate domain.  This
-provides realistic foam-bed mounting ($f_\text{rigid} \approx 1.7$~Hz) and, unlike
-a Boundary Spring Foundation or Rigid Motion Suppression, it has a built-in base
-displacement field that the Base Excitation node can drive.
-
-\begin{center}
-\textbf{Critical combination: Domain Spring Foundation + Base Excitation node
-(domain selection, same domain as the spring).}
-\end{center}
-
-\textbf{Why Boundary Spring Foundation fails:} a Boundary Spring Foundation
-connects to a fixed reference frame.  The Base Excitation node prescribes
-$\ddot{u}_0$ to the constrained nodes, but the spring simultaneously pulls those
-nodes back toward zero -- the two conditions contradict each other, producing a
-flat, non-physical $H_{11}$.
-
-\textbf{Why Rigid Motion Suppression fails for base excitation:} RMS adds
-algebraic constraints that pin only the rigid-body DOFs with no spring stiffness.
-Because no elastic restoring force connects the plate to the moving base, the
-Base Excitation node drives an unconstrained free body -- $H_{11}$ shows no
-resonance and the rigid-body transmissibility approaches 1 trivially at all
-frequencies.  Furthermore, RMS produces different eigenmodes than the Domain
-Spring Foundation, so mixing them between Study~1 and Study~2 gives an
-inconsistent MIMO matrix.
+\textbf{Phase~II (IMU model):} a Domain Spring Foundation on the full plate domain
+provides realistic foam-bed mounting ($f_\text{rigid} \approx 1.7$~Hz).  This is
+the only boundary condition that is consistent between Study~1 and Study~2 AND can
+be driven by the Base Excitation node.  A Boundary Spring Foundation connects to a
+fixed reference frame and contradicts the Base Excitation prescription, producing a
+flat non-physical $H_{11}$.  Rigid Motion Suppression gives different eigenmodes
+than the spring foundation, making the two studies inconsistent.
 
 \subsection{COMSOL Implementation (IMU Model)}
 
@@ -256,7 +228,7 @@ Above resonance & $-180^\circ$ & $-360^\circ$ ($0^\circ$) \\
 \end{center}
 
 This $180^\circ$ sign convention difference has a direct impact on the DVF
-controller sign -- see Section~\ref{sec:dvf_sign}.
+controller sign; see Section~\ref{sec:dvf_sign}.
 
 % -----------------------------------------------------------------------
 % ===========================  PART I  ==================================
@@ -267,7 +239,7 @@ controller sign -- see Section~\ref{sec:dvf_sign}.
   {\LARGE\bfseries Part~I: PPF Control with Dual Piezo Patches}\\[6pt]
   \rule{\linewidth}{1.5pt}
 \end{center}
-\addcontentsline{toc}{section}{Part I -- PPF Control with Dual Piezo Patches}
+\addcontentsline{toc}{section}{Part I: PPF Control with Dual Piezo Patches}
 
 % -----------------------------------------------------------------------
 \section{Phase~I Hardware: Dual Piezo Patch Setup}
@@ -286,7 +258,7 @@ then solves for the charge-neutral open-circuit voltage $V_s$ across the ceramic
   \item Electrostatics (es) $\to$ Boundaries $\to$ Floating Potential.
   \item Select \emph{both} the top face and bottom face of the Patch~3 PIC255
         ceramic in one Floating Potential node.
-  \item Do \emph{not} add a Ground BC to either face -- that forces $V=0$ and
+  \item Do \emph{not} add a Ground BC to either face; that forces $V=0$ and
         corrupts the sensor voltage.
 \end{itemize}
 
@@ -380,7 +352,7 @@ Substituting $s \to d/dt$ in~\eqref{eq:Kppf}:
 The controller is a virtual oscillator driven by $V_s(t)$.  At resonance a driven
 oscillator lags its input by $-90^\circ$, which combined with the $-90^\circ$
 already in $H_{22}$ gives $-180^\circ$ total phase from displacement to actuator
-force -- the definition of a damping force.
+force, which is the definition of a damping force.
 
 \subsection{Block Diagram}
 \label{sec:ppf_block}
@@ -402,17 +374,12 @@ voltage $V_s$ feeds positively back through $K_\text{PPF}$.
   \node[below left=2pt of sum] {\small$+$};
 
   \node[block] (H22)  at (4,0)    {$H_{22}$};
-  \node[block] (Kppf) at (4,-2.4) {$K_{\mathrm{PPF}}$};
+  \node[block] (Kppf) at (4,-1.6) {$K_{\mathrm{PPF}}$};
 
-  % input
   \draw[->] (-2.2,0) -- node[above]{$d_{\mathrm{dis}}$} (sum.west);
-  % sum to H22
   \draw[->] (sum.east) -- node[above]{$V_a$} (H22.west);
-  % H22 to output
   \draw[->] (H22.east) -- node[above]{$V_s$} ++(1.8,0) coordinate (out);
-  % feedback path: output to Kppf
   \draw      (out) |- (Kppf.east);
-  % Kppf back to sum
   \draw[->]  (Kppf.west) -| (sum.south);
 \end{tikzpicture}
 \caption{PPF positive feedback loop.  Both summing inputs carry a $+$ sign
@@ -486,8 +453,8 @@ $[-180^\circ, 0^\circ]$.  Therefore:
   \angle L(j\omega) \in [-360^\circ,\, 0^\circ] \quad \forall\,\omega.
 \end{equation}
 The locus of $-L(j\omega)$ thus stays within the unit half-plane to the right of
-$-1$ for any finite positive gain $g$ -- unconditional stability for collocated
-PPF.
+$-1$ for any finite positive gain $g$, giving unconditional stability for
+collocated PPF.
 
 \paragraph{Physical interpretation.}
 At resonance, the plate displacement and sensor voltage are related by
@@ -561,7 +528,7 @@ functions.
   {\LARGE\bfseries Part~II: DVF Control with MEMS Accelerometer}\\[6pt]
   \rule{\linewidth}{1.5pt}
 \end{center}
-\addcontentsline{toc}{section}{Part II -- DVF Control with MEMS Accelerometer}
+\addcontentsline{toc}{section}{Part II: DVF Control with MEMS Accelerometer}
 
 % -----------------------------------------------------------------------
 \section{Phase~II Hardware: IMU Setup}
@@ -653,7 +620,7 @@ a maximum stable gain $g_\text{max}$ exists and must be verified by Nyquist.
 \toprule
 Strategy & Stability condition & Phase requirement on $H_{22}$ at $\omega_n$ & Verdict \\
 \midrule
-PPF & $\angle H_{22}\in(-90^\circ,+90^\circ)$ & $-90^\circ$ -- on boundary & Not safe \\[4pt]
+PPF & $\angle H_{22}\in(-90^\circ,+90^\circ)$ & $-90^\circ$, on boundary & Not safe \\[4pt]
 IRC & $\mathrm{Im}[H_{22}] \leq 0$ for all $\omega$ & Holds only for disp./charge sensors & Not applicable \\[4pt]
 DVF & Nyquist of $gH_{22,\text{vel}}$ not encircling $-1$ & $H_{22,\text{vel}}$ real and positive at $\omega_n$ & Applicable; Nyquist check required \\
 \bottomrule
@@ -684,7 +651,7 @@ the actuator input with a minus sign.
   \node[below left=2pt of sum] {\small$-$};
 
   \node[block] (H22)  at (4,0)    {$H_{22}$};
-  \node[block] (Kdvf) at (4,-2.4) {$K_{\mathrm{DVF}}$};
+  \node[block] (Kdvf) at (4,-1.6) {$K_{\mathrm{DVF}}$};
 
   \draw[->] (-2.2,0) -- node[above]{$d_{\mathrm{dis}}$} (sum.west);
   \draw[->] (sum.east) -- node[above]{$V_a$} (H22.west);
@@ -726,7 +693,7 @@ At resonance, $H_{22,\text{disp}}(j\omega_n) = -jA_n/(2\zeta\omega_n^2)$, so:
   \label{eq:Hvel_pos}
 \end{equation}
 The velocity FRF is \emph{real and positive} at resonance.  The Nyquist locus of
-$g H_{22,\text{vel}}$ passes through the positive real axis -- far from $-1$.
+$g H_{22,\text{vel}}$ passes through the positive real axis, far from $-1$.
 
 \subsection{Sign Convention Fix}
 \label{sec:dvf_sign}
@@ -870,6 +837,44 @@ In MATLAB: \texttt{Kd = c2d(DVF, 1e-4, 'tustin')}.
   \item Discretise $K_\text{DVF}$ at 10~kHz (Tustin).
 \end{enumerate}
 
+\subsection{State-Space Model and Time-Domain Simulation}
+\label{sec:ssest}
+
+The COMSOL output is a frequency-domain FRF sampled at discrete frequencies.  To
+run time-domain simulations (impulse response, sine sweep with DVF on/off), a
+continuous-time state-space model is fitted to the FRD data.
+
+\paragraph{What a state-space model is.}
+A state-space model describes a dynamic system as:
+\begin{align}
+  \dot{\mathbf{x}}(t) &= A\mathbf{x}(t) + B u(t), \label{eq:ss_state} \\
+  y(t) &= C\mathbf{x}(t) + D u(t). \label{eq:ss_out}
+\end{align}
+The vector $\mathbf{x}$ is the internal state (here: displacement and velocity of
+the plate at the target mode), $u$ is the input (base acceleration or actuator
+voltage), and $y$ is the output (IMU acceleration).  For a single resonance the
+minimum state dimension is $n_x = 2$ (one complex pole pair).
+
+\paragraph{Fitting with \texttt{ssest}.}
+MATLAB's \texttt{ssest} fits $A$, $B$, $C$, $D$ to the measured FRD by
+minimising the prediction error between the model frequency response and the
+COMSOL data.  The fit is restricted to a narrow frequency window
+($f_1 \pm 40$~Hz) so that only the target mode is fitted; fitting the full
+spectrum would force the model to compromise across multiple resonances and produce
+unphysical poles.
+
+\begin{verbatim}
+nx = 2;   % one complex pole pair = one resonance
+LTI_OL = ssest(idfrd(H21(mask), w(mask), 0), nx, opt_ss);
+\end{verbatim}
+
+\paragraph{Verification.}
+After fitting, \texttt{damp(LTI\_OL)} prints the natural frequency and damping
+ratio of each pole.  Expected values: $f_n \approx f_1$, $\zeta \approx 0.01$
+(half the loss factor $\eta = 0.02$ used in COMSOL).  A pole far from $f_1$ or
+with $\zeta \ll 0.01$ indicates a non-physical fit, usually caused by fitting
+too wide a frequency range.
+
 \subsection{Mode Selection}
 
 The script targets a specific mode via a single variable:
@@ -883,12 +888,12 @@ titles) update automatically.
 \subsection{Phase~I vs Phase~II Data Files}
 
 \paragraph{PPF model (Phase~I, \texttt{Matlab/} folder):}
-\texttt{H11.txt}, \texttt{H12.txt}, \texttt{H21.txt}, \texttt{H22.txt} -- tip
-displacement and sensor voltage, frequency range 10--1000~Hz.
+\texttt{H11.txt}, \texttt{H12.txt}, \texttt{H21.txt}, \texttt{H22.txt}:
+tip displacement and sensor voltage, frequency range 10--1000~Hz.
 
 \paragraph{IMU model (Phase~II, \texttt{ImuActuator/matlab/} folder):}
 \texttt{H11\_accel.txt}, \texttt{H12\_accel.txt},
-\texttt{H21\_accel.txt}, \texttt{H22\_accel.txt} --
+\texttt{H21\_accel.txt}, \texttt{H22\_accel.txt}:
 acceleration at IMU corner, format \texttt{freq Re+Im*i}, 1--250~Hz.
 
 Both are loaded by the same \texttt{load\_tf()} helper function (handles both
@@ -908,7 +913,7 @@ If the IMU sits near a node of the 86.51~Hz mode and near an antinode of the
 actuator was placed.
 
 Furthermore, the phase of $H_{22}$ near 86.51~Hz is feedthrough-distorted
-($+140^\circ$ at 85~Hz, passing through $+50^\circ$ at 87~Hz -- never approaching
+($+140^\circ$ at 85~Hz, passing through $+50^\circ$ at 87~Hz, never approaching
 $-90^\circ$).  A controller whose sign was derived assuming $-90^\circ$ phase at
 $f_1$ will produce amplification instead of suppression when targeting this mode.
 
@@ -1015,7 +1020,7 @@ places a zero before the first natural frequency.
 $\approx 18$~dB (mode~3, 123~Hz).  Settling time 0.57~s (best of four controllers
 tested).  Same patches, same PPF gain convention ($g = 0.2$--$0.3$).
 
-\subsection*{Baken et al.\ (2025) -- Sandwich Beam (Canonical MIMO Equations)}
+\subsection*{Baken et al.\ (2025): Sandwich Beam (Canonical MIMO Equations)}
 
 Reference for the MIMO matrix notation and PPF formula used in this project
 (Eq.~\eqref{eq:mimo}, Eq.~\eqref{eq:Kppf}, and the closed-loop
@@ -1177,9 +1182,114 @@ appropriate for direct comparison with the simulation outputs of this project.
 \end{itemize}
 
 % -----------------------------------------------------------------------
+\section{Conclusions and Applicability to the ASML Gridplate}
+\label{sec:conclusions}
+
+\subsection{Conclusions from This Model}
+
+\begin{itemize}
+  \item \textbf{PPF (Phase~I):} With a collocated DuraAct piezo sensor and $g = 0.3$,
+        $\zeta_f = 0.3$, the predicted suppression at $f_1 \approx 214$~Hz is
+        $\approx -22.6$~dB.
+        \emph{[TODO: replace with actual COMSOL closed-loop result once H11/H12/H21
+        are re-exported.]}
+
+  \item \textbf{DVF (Phase~II):} Mode~3 at 160.90~Hz shows a clean $-90^\circ$
+        phase crossing and is the reliable DVF target.  At $g = 0.30\,g_\text{max}$
+        the predicted suppression is approximately $-10$ to $-15$~dB, consistent
+        with the Falangas~\cite{falangas1994} benchmark of 10.5~dB.
+        \emph{[TODO: replace with exact dB value from dvf\_main.m once
+        H11 and H12 are re-exported from COMSOL.]}
+
+  \item \textbf{Mode~1 at 86.51~Hz is not reliably controllable} with simple DVF
+        from the current patch and IMU positions.  The phase of $H_{22}$ near this
+        mode is feedthrough-distorted, which means the sign assumption of the
+        controller breaks down locally.
+
+  \item \textbf{Domain Spring Foundation} is required for a consistent MIMO matrix.
+        Rigid Motion Suppression or a Boundary Spring Foundation both produce
+        incorrect $H_{11}$ when combined with base excitation.
+\end{itemize}
+
+\subsection{Applicability to the ASML Gridplate}
+\label{sec:gridplate}
+
+\paragraph{What is the gridplate?}
+The ASML gridplate is a large flat reference plate (typically glass-ceramic or
+aluminium) that carries a precision encoder grating.  Encoder heads on the wafer
+stage read position from this grating, so any vibration of the gridplate directly
+degrades positioning accuracy.  Position stability requirements are on the order of
+0.15~nm over 24~hours~\cite{gridplate_patent}.  Stage accelerations and
+decelerations excite gridplate bending modes, which ASML literature places in the
+range of 100--300~Hz (horizontal modes near 160--180~Hz, vertical modes near
+250--300~Hz).  These frequencies overlap directly with the modes observed in this
+simulation (160.90~Hz, 225.56~Hz).
+
+\paragraph{Can DuraAct piezo patches control gridplate vibrations?}
+Based on the findings of this project, the following questions need to be answered
+before a conclusion can be drawn.  This section is a \textbf{template} for the
+next modelling step.
+
+\begin{enumerate}
+  \item \textbf{Plate size and material.}
+        The dummy plate used here is $1000 \times 1000 \times 100$~mm aluminium.
+        A real ASML gridplate is likely thinner and may use Zerodur or a
+        glass-ceramic composite.  Modal frequencies scale with thickness and
+        elastic modulus.  \emph{[TODO: obtain gridplate dimensions and material
+        from ASML documentation and re-run the eigenfrequency study.]}
+
+  \item \textbf{Actuator authority.}
+        The DuraAct patch ($50 \times 30$~mm, d31 mode) applies a bending moment
+        over a small footprint.  On a 1~m plate this patch couples well into the
+        first mode.  For a larger or stiffer gridplate the coupling coefficient
+        $A_n$ in~\eqref{eq:H22ppf} will decrease.  A lower $A_n$ means a lower
+        $H_{22}$ peak and a smaller stable gain range.
+        \emph{[TODO: compute $H_{22}$ peak magnitude for the gridplate geometry
+        and compare with the dummy plate value of $\approx 0.17$~m/s$^2$/V.]}
+
+  \item \textbf{Multiple modes in the target band.}
+        This model shows four flexible modes between 87 and 226~Hz.  A larger,
+        thinner gridplate may have more closely spaced modes.  DVF with a single
+        patch will attempt to damp all modes simultaneously; whether the gain margin
+        is sufficient across all modes requires a Nyquist check on the full
+        frequency-domain FRF.
+
+  \item \textbf{Spatial coverage.}
+        A gridplate that must remain flat over its entire area needs spatially
+        distributed actuation.  A single patch suppresses vibration locally near
+        the patch; the plate may still vibrate at antinodes far from the patch.
+        Multiple patches and a decentralised control architecture (one
+        DVF/PPF loop per patch) are likely needed, as demonstrated by
+        Luleci~\cite{luleci2013} for a $700 \times 400$~mm plate.
+
+  \item \textbf{Environmental constraints.}
+        ASML lithography machines operate in a controlled environment.  Factors
+        such as vacuum compatibility, thermal stability, outgassing, and
+        electromagnetic interference from the encoder system may restrict which
+        patch materials and amplifier topologies can be used.
+        \emph{[TODO: verify DuraAct P-876.A12 suitability for the ASML
+        operating environment.]}
+\end{enumerate}
+
+\paragraph{Preliminary assessment.}
+The simulation results show that a single DuraAct patch can suppress the first
+bending mode of a 1~m aluminium plate by 10--22~dB depending on the controller
+and sensor choice.  This level of suppression is physically achievable on a
+comparable gridplate provided the actuator is placed at a high strain-energy
+location and the target mode has a clean $-90^\circ$ phase crossing in $H_{22}$.
+The main open question is whether the patch authority remains sufficient on a
+stiffer or larger plate and whether a single-patch approach provides adequate
+spatial coverage.
+
+% -----------------------------------------------------------------------
 \section{References}
 
-\begin{thebibliography}{12}
+\begin{thebibliography}{13}
+
+\bibitem{gridplate_patent}
+ASML Netherlands B.V.,
+``Lithographic apparatus and device manufacturing method,''
+US Patent 10,551,751, 2020.
 
 \bibitem{falangas1994}
 E.~T.~Falangas, J.~A.~Dworak, and S.~Koshigoe,
